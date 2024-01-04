@@ -27,3 +27,4 @@ urllib3==2.1.0
 Pillow==10.1.0
 speechrecognition
 edge-tts
+flask
