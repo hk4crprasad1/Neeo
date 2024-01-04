@@ -1,0 +1,50 @@
+import os
+from telegram import Update, InlineQueryResultArticle, InputTextMessageContent
+from telegram.ext import (
+    CommandHandler,
+    MessageHandler,
+    filters,
+    Application,
+    InlineQueryHandler
+)
+
+from gemini_pro_bot.filters import AuthorizedUserFilter
+from dotenv import load_dotenv
+from gemini_pro_bot.handlers import (
+    start,
+    help_command,
+    newchat_command,
+    handle_message,
+    handle_image,
+    handle_voice
+)
+
+load_dotenv()
+
+
+def start_bot() -> None:
+    """Start the bot."""
+    # Create the Application and pass it your bot's token.
+    application = Application.builder().token(os.getenv("BOT_TOKEN")).build()
+
+    # on different commands - answer in Telegram
+    application.add_handler(CommandHandler("start", start, filters=AuthorizedUserFilter()))
+    application.add_handler(CommandHandler("help", help_command, filters=AuthorizedUserFilter()))
+    application.add_handler(CommandHandler("new", newchat_command, filters=AuthorizedUserFilter()))
+
+    # Any text message is sent to LLM to generate a response
+    application.add_handler(
+        MessageHandler( AuthorizedUserFilter() & ~filters.COMMAND & filters.TEXT, handle_message)
+    )
+
+    # Any image is sent to LLM to generate a response
+    application.add_handler(
+        MessageHandler( AuthorizedUserFilter() & ~filters.COMMAND & filters.PHOTO, handle_image)
+    )
+
+    application.add_handler(
+        MessageHandler( AuthorizedUserFilter() & ~filters.COMMAND & filters.VOICE, handle_voice)
+    )
+
+    # Run the bot until the user presses Ctrl-C
+    application.run_polling(allowed_updates=Update.ALL_TYPES)
