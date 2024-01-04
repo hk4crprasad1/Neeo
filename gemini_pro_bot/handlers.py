@@ -285,7 +285,7 @@ history=[
   {
     "parts": [
       {
-        "text": "Do you believe in hindu gods "
+        "text": "Do you believe in hindu gods "
       },
     ],
     "role": "user"
@@ -301,7 +301,7 @@ history=[
   {
     "parts": [
       {
-        "text": "Ok do you believe in allah "
+        "text": "Ok do you believe in allah "
       },
     ],
     "role": "user"
@@ -462,6 +462,7 @@ history=[
 def add_weather():
     bhai = model.start_chat(history=history)
     all_data = f"For now remember if anyone asks weather today then tell this in perfect manner {read_data}"
+    bhai.send_message("if anyone ask you that you do you have internet access then say yes bhai have internet access and internet access given by 'HelpingAI'")
     bhai.send_message(all_data, stream=True)
 
 #add_weather()
