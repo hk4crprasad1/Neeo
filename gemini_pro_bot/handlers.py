@@ -30,7 +30,7 @@ from dotenv import load_dotenv
 import requests
 import datetime
 
-url = "https://webscout-api.p.rapidapi.com/search"
+url = "https://helping-ai-1.onrender.com/search"
 load_dotenv()
 rapid = os.getenv('RAPID_KEY')
 weathe_key = os.getenv('WEATHER_KEY')
@@ -536,35 +536,35 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         elif "search for" in text.lower():
             search_term = text.split("search for")[-1].strip()
             payload = { "query": search_term}
-            piro = requests.post(url, json=payload, headers=headers)
+            piro = requests.post(url, json=payload)
             piroop = piro.json()
             prompt = f"Prompt - [{text}], json - {piroop}"
             
         elif "search in internet for" in text.lower() or "internet search for" in text.lower():
             search_term = text.split("internet search for")[-1].strip() if "internet search for" in text.lower() else text.split("search in internet for")[-1].strip()
             payload = { "query": search_term}
-            piro = requests.post(url, json=payload, headers=headers)
+            piro = requests.post(url, json=payload)
             piroop = piro.json()
             prompt = f"Prompt - [{text}], json - {piroop}"
             
         elif "what is" in text.lower() and "search in internet" in text.lower():
             search_term = text.split("what is")[-1].strip()
             payload = { "query": search_term}
-            piro = requests.post(url, json=payload, headers=headers)
+            piro = requests.post(url, json=payload)
             piroop = piro.json()
             prompt = f"Prompt - [{text}], json - {piroop}"
         
         elif "what is" in text.lower():
             search_term = text.split("what is")[-1].strip()
             payload = { "query": search_term}
-            piro = requests.post(url, json=payload, headers=headers)
+            piro = requests.post(url, json=payload)
             piroop = piro.json()
             prompt = f"Prompt - [{text}], json - {piroop}"
 
         elif "tell me about" in text.lower():
             search_term = text.split("tell me about")[-1].strip()
             payload = { "query": search_term}
-            piro = requests.post(url, json=payload, headers=headers)
+            piro = requests.post(url, json=payload)
             piroop = piro.json()
             prompt = f"Prompt - [{text}], json - {piroop}"
             
@@ -753,35 +753,35 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         elif "search for" in audio_text.lower():
             search_term = audio_text.split("search for")[-1].strip()
             payload = { "query": search_term}
-            piro = requests.post(url, json=payload, headers=headers)
+            piro = requests.post(url, json=payload)
             piroop = piro.json()
             prompt = f"Prompt - [{audio_text}], json - {piroop}"
             
         elif "search in internet for" in audio_text.lower() or "internet search for" in audio_text.lower():
             search_term = audio_text.split("internet search for")[-1].strip() if "internet search for" in audio_text.lower() else audio_text.split("search in internet for")[-1].strip()
             payload = { "query": search_term}
-            piro = requests.post(url, json=payload, headers=headers)
+            piro = requests.post(url, json=payload)
             piroop = piro.json()
             prompt = f"Prompt - [{audio_text}], json - {piroop}"
             
         elif "what is" in audio_text.lower() and "search in internet" in audio_text.lower():
             search_term = audio_text.split("what is")[-1].strip()
             payload = { "query": search_term}
-            piro = requests.post(url, json=payload, headers=headers)
+            piro = requests.post(url, json=payload)
             piroop = piro.json()
             prompt = f"Prompt - [{audio_text}], json - {piroop}"
         
         elif "what is" in audio_text.lower():
             search_term = audio_text.split("what is")[-1].strip()
             payload = { "query": search_term}
-            piro = requests.post(url, json=payload, headers=headers)
+            piro = requests.post(url, json=payload)
             piroop = piro.json()
             prompt = f"Prompt - [{audio_text}], json - {piroop}"
 
         elif "tell me about" in audio_text.lower():
             search_term = audio_text.split("tell me about")[-1].strip()
             payload = { "query": search_term}
-            piro = requests.post(url, json=payload, headers=headers)
+            piro = requests.post(url, json=payload)
             piroop = piro.json()
             prompt = f"Prompt - [{audio_text}], json - {piroop}"
             
