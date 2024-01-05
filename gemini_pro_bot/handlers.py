@@ -533,7 +533,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         new_chat(context)
     text = update.message.text
     
-    sticker_id = 'CAACAgUAAxkBAAIDhWWYGJYmrjvL3nlrb5Ul5vlx63QNAAKPBwACuHw5Vk-5ZpgLLlqNNAQ'
+    sticker_id = 'CAACAgEAAxkBAAIDhmWYG0-qnpcm3fEl5yKsbyh30cxfAAJ2AwACVghgRgFc7EpOz8QCNAQ'
     sticker_message = await update.message.reply_sticker(reply_to_message_id=update.message.message_id, sticker=sticker_id)
 
     text = update.message.text
@@ -657,7 +657,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def handle_image(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle incoming images with captions and generate a response."""
-    sticker_id = 'CAACAgUAAxkBAAIDhWWYGJYmrjvL3nlrb5Ul5vlx63QNAAKPBwACuHw5Vk-5ZpgLLlqNNAQ'
+    sticker_id = 'CAACAgEAAxkBAAIDhmWYG0-qnpcm3fEl5yKsbyh30cxfAAJ2AwACVghgRgFc7EpOz8QCNAQ'
     sticker_message = await update.message.reply_sticker(reply_to_message_id=update.message.message_id, sticker=sticker_id)
 
     init_msg = await update.message.reply_text(
@@ -681,7 +681,7 @@ async def handle_image(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         prompt = "Analyse this image and generate response"
     response = await img_model.generate_content_async([prompt, a_img], stream=True)
     full_plain_message = ""
-    await context.bot.delete_message(chat_id=update.message.chat_id, message_id=sticker_message.message_id)
+    await _.bot.delete_message(chat_id=update.message.chat_id, message_id=sticker_message.message_id)
     async for chunk in response:
         try:
             if chunk.text:
@@ -752,7 +752,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     
     os.remove(flac_path)  # Remove the temporary FLAC file
     
-    sticker_id = 'CAACAgUAAxkBAAIDhWWYGJYmrjvL3nlrb5Ul5vlx63QNAAKPBwACuHw5Vk-5ZpgLLlqNNAQ'
+    sticker_id = 'CAACAgEAAxkBAAIDhmWYG0-qnpcm3fEl5yKsbyh30cxfAAJ2AwACVghgRgFc7EpOz8QCNAQ'
     sticker_message = await update.message.reply_sticker(reply_to_message_id=update.message.message_id, sticker=sticker_id)
 
     init_msg = await update.message.reply_text(
