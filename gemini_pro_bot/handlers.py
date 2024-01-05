@@ -724,9 +724,11 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if context.chat_data.get("chat") is None:
         new_chat(context)
     
+     = current_datetime.strftime("%H:%M%S")
+    voice_format = f"VOC_{formatted_time}"
     for file_extension in [".ogg", ".flac"]:
-        if os.path.exists(f"original_audio{file_extension}"):
-            os.remove(f"original_audio{file_extension}")
+        if os.path.exists(f"{voice_format}{file_extension}"):
+            os.remove(f"{voice_format}{file_extension}")
             
         if os.path.exists(f"output{file_extension}"):
             os.remove(f"output{file_extension}")
@@ -736,8 +738,8 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     voice_bytes = await file.download_as_bytearray()
     
     # Convert to FLAC using ffmpeg
-    voice_path = "original_audio.ogg"
-    flac_path = "converted_audio.flac"
+    voice_path = f"{voice_format}.ogg"
+    flac_path = f"VOCIC_{formatted_time}.flac"
     
     with open(voice_path, "wb") as voice_file:
         voice_file.write(voice_bytes)
