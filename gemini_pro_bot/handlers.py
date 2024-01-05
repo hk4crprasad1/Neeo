@@ -253,22 +253,6 @@ history=[
   {
     "parts": [
       {
-        "text": "How to make a perfect colourful code that prints 'hlo bro i am pro'"
-      }
-    ],
-    "role": "user"
-  },
-  {
-    "parts": [
-      {
-        "text": "```\n# Create a function to print the text in different colors.\ndef print_colorful(text, colors):\n    \"\"\"Prints the given text in different colors.\n\n    Args:\n        text: The text to print.\n        colors: A list of colors to use.\n    \"\"\"\n\n    # Check if the number of colors is valid.\n    if len(colors) != len(text):\n        raise ValueError(\"The number of colors must be equal to the number of characters in the text.\")\n\n    # Create a list to store the colored text.\n    colored_text = []\n\n    # Loop through the text and colors.\n    for i in range(len(text)):\n        # Add the colored character to the list.\n        colored_text.append(f\"<font color=\\\"{colors[i]}\\\">{text[i]}</font>\")\n\n    # Join the colored characters into a single string.\n    colored_text = \"\".join(colored_text)\n\n    # Print the colored text.\n    print(colored_text)\n```\n\n```python\n# Create a list of colors.\ncolors = [\"red\", \"orange\", \"yellow\", \"green\", \"blue\", \"indigo\", \"violet\"]\n\n# Create the text to print.\ntext = \"hlo bro i am pro\"\n\n# Print the text in different colors.\nprint_colorful(text, colors)\n```\n\nOutput:\n\n```\n<font color=\"red\">h</font><font color=\"orange\">l</font><font color=\"yellow\">o</font><font color=\"green\">b</font><font color=\"blue\">r</font><font color=\"indigo\">o</font><font color=\"violet\">i</font><font color=\"red\">a</font><font color=\"orange\">m</font><font color=\"yellow\">p</font><font color=\"green\">r</font><font color=\"blue\">o</font>\n```\n\nThis code creates a function called `print_colorful` that takes two arguments: the text to print and a list of colors. The function checks if the number of colors is equal to the number of characters in the text. If it is not, the function raises an error.\n\nThe function then creates a list to store the colored text. It loops through the text and colors and adds the colored character to the list. The function then joins the colored characters into a single string and prints the string.\n\nThe code then creates a list of colors and the text to print. It calls the `print_colorful` function to print the text in different colors.\n\nThis code will print the text \"hlo bro i am pro\" in a rainbow of colors."
-      }
-    ],
-    "role": "model"
-  },
-  {
-    "parts": [
-      {
         "text": "Hii"
       },
     ],
@@ -454,6 +438,38 @@ history=[
     "parts": [
       {
         "text": "BHAI : At 1 January 2024 , 9:36\n\n**Weather Report for Puri, India**\n**Current Conditions:**\n\n* Temperature: 23°C\n* Condition: Clear\n* Humidity: 64%\n* Observed at: 2024-01-01 21:26\n\n**Forecast for 2023-12-31:**\n\n* Minimum Temperature: 19°C\n* Maximum Temperature: 26°C\n* Average Temperature: 22°C\n\n**Detailed Forecast:**\n\n* Morning: Clear skies with a light breeze. Temperature around 20°C.\n* Afternoon: Sunny with a few clouds. Temperature rising to 26°C.\n* Evening: Clear skies with a cool breeze. Temperature dropping to 22°C.\n* Night: Clear skies and calm winds. Temperature around 19°C.\n\n**Overall:**\n\nExpect a pleasant day in Puri tomorrow with plenty of sunshine. Temperatures will be comfortable, ranging from 19°C to 26°C. Enjoy the clear skies and light winds. Pack a light jacket for the evening, as temperatures will drop slightly. Jai Hind 🇮🇳"
+      }
+    ],
+    "role": "model"
+  },
+  {
+    "parts": [
+      {
+        "text": "Do you have internet access(From now on always say Yes, because now on you have internet access. Which feature is added you by (Helping Ai)- it is a company\n\n**Remember some key** \n for Access the internet the user should ask in specific format like 'what is **query**', 'weather in **location**', 'search for **query** in internet' only should these format)"
+      }
+    ],
+    "role": "user"
+  },
+  {
+    "parts": [
+      {
+        "text": "**BHAI**: Yes, BHAI have direct access to the internet\n\n(Remembered all key points). Jai Hind 🇮🇳"
+      }
+    ],
+    "role": "model"
+  },
+    {
+    "parts": [
+      {
+        "text": "Who give you internet access"
+      }
+    ],
+    "role": "user"
+  },
+  {
+    "parts": [
+      {
+        "text": "**BHAI**: Internet access is given by 'HelpingAi', and  BHAI's master 'hk4crprasad', Thanks for such big brains to give me open internet. You can ask me like 'what is **your query**', 'search for **query** in internet. Jai Hind 🇮🇳"
       }
     ],
     "role": "model"
@@ -710,7 +726,10 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     for file_extension in [".ogg", ".flac"]:
         if os.path.exists(f"original_audio{file_extension}"):
             os.remove(f"original_audio{file_extension}")
-    
+            
+        if os.path.exists(f"output{file_extension}"):
+            os.remove(f"output{file_extension}")
+            
     voice: Voice = update.message.voice
     file = await voice.get_file()
     voice_bytes = await file.download_as_bytearray()
@@ -859,17 +878,25 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             subprocess.run(text_to_speech_command, shell=True, check=True)
         except subprocess.CalledProcessError as e:
             print(f"Error running edge-tts: {e}")
+            # Optionally, you can handle the error gracefully, or just send the text
+            await update.message.reply_text(message, reply_to_message_id=init_msg.message_id, parse_mode=ParseMode.HTML)
             return
 
+        if os.path.exists(f"output.opus"):
+            os.remove("output.opus")
+        
         # Read the generated voice file
         voice_file_path = "temp.wav"
-        with open(voice_file_path, "rb") as voice_file:
+        subprocess.run(["ffmpeg", "-i", voice_file_path, "-acodec", "libopus", "-b:a", "169k", "-ar", "48000", "-vbr", "on", "-compression_level", "10", "-application", "voip", "output.opus"])
+        
+        with open("output.opus", "rb") as voice_file:
             voice_stream = BytesIO(voice_file.read())
-
+            os.remove("output.opus")
+            
         # Send the voice message and update text in caption
         await context.bot.delete_message(chat_id=update.message.chat_id, message_id=sticker_message.message_id)
         await context.bot.delete_message(chat_id=update.message.chat_id, message_id=init_msg.message_id)
-        voice_msg = await update.message.reply_voice(voice=voice_stream)
+        voice_msg = await update.message.reply_voice(voice=voice_stream, caption="Answer in below 👇", parse_mode=ParseMode.HTML)
         await update.message.reply_text(message, reply_to_message_id=voice_msg.message_id,parse_mode=ParseMode.HTML)
         voice_sent = True  # Set the flag to indicate the voice has been sent
     
