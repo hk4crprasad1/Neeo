@@ -877,7 +877,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     
     if not voice_sent:
         # Use edge-tts to convert response text to voice and write to "temp.wav"
-        text_to_speech_command = f'edge-tts -v "hi-IN-MadhurNeural" --rate=+22% -t "{full_plain_message}" --write-media temp.wav'
+        text_to_speech_command = f'edge-tts -v "hi-IN-MadhurNeural" --rate=+22% -t "{message}" --write-media temp.wav'
         
         try:
             subprocess.run(text_to_speech_command, shell=True, check=True)
