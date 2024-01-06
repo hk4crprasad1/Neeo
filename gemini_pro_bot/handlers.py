@@ -723,7 +723,8 @@ async def handle_image(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if context.chat_data.get("chat") is None:
         new_chat(context)
-    
+	    
+    current_datetime = datetime.datetime.now()
     formatted_time = current_datetime.strftime("%H:%M%S")
     voice_format = f"VOC_{formatted_time}"
     opus = f"OPUS_{formatted_time}.opus"
