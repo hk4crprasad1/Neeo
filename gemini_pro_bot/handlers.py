@@ -724,14 +724,15 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if context.chat_data.get("chat") is None:
         new_chat(context)
     
-     = current_datetime.strftime("%H:%M%S")
+    formatted_time = current_datetime.strftime("%H:%M%S")
     voice_format = f"VOC_{formatted_time}"
+    opus = f"OPUS_{formatted_time}.opus"
     for file_extension in [".ogg", ".flac"]:
         if os.path.exists(f"{voice_format}{file_extension}"):
             os.remove(f"{voice_format}{file_extension}")
             
-        if os.path.exists(f"output{file_extension}"):
-            os.remove(f"output{file_extension}")
+        if os.path.exists(opus):
+            os.remove(opus)
             
     voice: Voice = update.message.voice
     file = await voice.get_file()
@@ -885,16 +886,16 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             await update.message.reply_text(message, reply_to_message_id=init_msg.message_id, parse_mode=ParseMode.HTML)
             return
 
-        if os.path.exists(f"output.opus"):
-            os.remove("output.opus")
+        if os.path.exists(opus):
+            os.remove(opus)
         
         # Read the generated voice file
         voice_file_path = "temp.wav"
-        subprocess.run(["ffmpeg", "-i", voice_file_path, "-acodec", "libopus", "-b:a", "169k", "-ar", "48000", "-vbr", "on", "-compression_level", "10", "-application", "voip", "output.opus"])
+        subprocess.run(["ffmpeg", "-i", voice_file_path, "-acodec", "libopus", "-b:a", "169k", "-ar", "48000", "-vbr", "on", "-compression_level", "10", "-application", "voip", opus])
         
-        with open("output.opus", "rb") as voice_file:
+        with open(opus, "rb") as voice_file:
             voice_stream = BytesIO(voice_file.read())
-            os.remove("output.opus")
+            os.remove(opus)
             
         # Send the voice message and update text in caption
         await context.bot.delete_message(chat_id=update.message.chat_id, message_id=sticker_message.message_id)
