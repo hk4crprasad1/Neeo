@@ -4,15 +4,20 @@ from google.generativeai.types.generation_types import (
     StopCandidateException,
     BlockedPromptException,
 )
-from telegram import Update, InlineQueryResultArticle, InputTextMessageContent
+from telegram import Update, InlineQueryResultArticle, InputTextMessageContent, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
+
 from telegram.ext import (
     CommandHandler,
     MessageHandler,
     filters,
     Application,
     ContextTypes,
-    InlineQueryHandler
+    InlineQueryHandler, 
+    CallbackContext,
+    CallbackQueryHandler
 )
+import aiosqlite
+from aiosqlite import connect
 import html
 import subprocess
 from typing import Union
@@ -30,6 +35,8 @@ from dotenv import load_dotenv
 import requests
 import datetime
 
+BROADCAST_MESSAGE, MESSAGE_TYPE = range(2)
+DATABASE_FILE = 'user_database.db'
 url = "https://helping-ai-1.onrender.com/search"
 load_dotenv()
 rapid = os.getenv('RAPID_KEY')
@@ -475,6 +482,28 @@ history=[
     "role": "model"
   },
 ]
+
+async def handle_feedback_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    user = update.effective_user
+
+    if query.data == 'feedback_positive':
+        feedback_text = '👍 Positive feedback received!'
+    elif query.data == 'feedback_negative':
+        feedback_text = '👎 Negative feedback received!'
+    else:
+        feedback_text = 'Unknown feedback received.'
+
+    # Send feedback with username and user ID to the specified channel
+    channel_id = '-1002092555838'
+    feedback_message = f"Username - @{user.username}\nUser ID - {user.id}\ngave feedback: {feedback_text}"
+    await context.bot.send_message(channel_id, feedback_message)
+
+    # Edit the original message to remove the inline keyboard
+    await query.message.edit_reply_markup(reply_markup=None)
+
+    await query.answer(text="Thanks for your feedback!")
+
 def add_weather():
     bhai = model.start_chat(history=history)
     all_data = f"For now remember if anyone asks weather today then tell this in perfect manner {read_data}"
@@ -510,6 +539,9 @@ Send a message to the bot to generate a response.
 """
     await update.message.reply_text(help_text)
 
+keyboard = [[InlineKeyboardButton("👍", callback_data="feedback_positive"),
+             InlineKeyboardButton("👎", callback_data="feedback_negative")]]
+reply_markup = InlineKeyboardMarkup(keyboard)
 
 async def newchat_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Start a new chat session."""
@@ -533,12 +565,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         new_chat(context)
     text = update.message.text
     
-    sticker_id = 'CAACAgEAAxkBAAIDhmWYG0-qnpcm3fEl5yKsbyh30cxfAAJ2AwACVghgRgFc7EpOz8QCNAQ'
-    sticker_message = await update.message.reply_sticker(reply_to_message_id=update.message.message_id, sticker=sticker_id)
-
+    user_id = update.effective_user.id
     text = update.message.text
     init_msg = await update.message.reply_text(
-        text="."
+        text="Generating...", reply_to_message_id=update.message.message_id
     )
     await update.message.chat.send_action(ChatAction.TYPING)
     # Generate a response using the text-generation pipeline
@@ -588,7 +618,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         elif "time" in text.lower() and "now" in text.lower():
             current_datetime = datetime.datetime.now()
             formatted_time = current_datetime.strftime("%H:%M pm, %S second")
-            prompt = f"time is - {formatted_time}, tell the time in 'BHAI : Now the time is _:_ pm and _ second'"
+            prompt = f"time is - {formatted_time}, tell the time in 'BHAI🔓: Now the time is _:_ pm and _ second'"
         else:        
             prompt=text
         await chat.send_message_async(
@@ -609,8 +639,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             # Resolve the response to prevent the chat session from getting stuck
             await response.resolve()
         return
-
-    await context.bot.delete_message(chat_id=update.message.chat_id, message_id=sticker_message.message_id)
+        
+    await save_user_id(user_id)
     full_plain_message = ""
     # Stream the responses
     async for chunk in response:
@@ -622,7 +652,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     text=message,
                     parse_mode=ParseMode.HTML,
                     disable_web_page_preview=True,
+                    reply_markup=reply_markup
                 )
+                    
         except StopCandidateException as sce:
             await init_msg.edit_text("The model unexpectedly stopped generating.")
             chat.rewind()  # Rewind the chat session to prevent the bot from getting stuck
@@ -650,18 +682,28 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     parse_mode=ParseMode.HTML,
                     reply_to_message_id=init_msg.message_id,
                     disable_web_page_preview=True,
+                    reply_markup=reply_markup
                 )
         # Sleep for a bit to prevent the bot from getting rate-limited
         await asyncio.sleep(0.1)
 
+async def save_user_id(user_id: int) -> None:
+    try:
+        print(f"Database file path: {DATABASE_FILE}")
+        async with connect(DATABASE_FILE) as db:
+            cursor = await db.execute("INSERT OR IGNORE INTO users (user_id) VALUES (?)", (user_id,))
+            await cursor.close()
+            await db.commit()
+            print(f"User ID {user_id} saved successfully.")
+    except Exception as e:
+        print(f"Error saving user ID {user_id}: {e}")
+        raise  # Reraise the exception to see the complete traceback
 
 async def handle_image(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle incoming images with captions and generate a response."""
-    sticker_id = 'CAACAgEAAxkBAAIDhmWYG0-qnpcm3fEl5yKsbyh30cxfAAJ2AwACVghgRgFc7EpOz8QCNAQ'
-    sticker_message = await update.message.reply_sticker(reply_to_message_id=update.message.message_id, sticker=sticker_id)
 
     init_msg = await update.message.reply_text(
-        text="."
+        text="Generating...", reply_to_message_id=update.message.message_id
     )
     images = update.message.photo
     unique_images: dict = {}
@@ -681,7 +723,7 @@ async def handle_image(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         prompt = "Analyse this image and generate response"
     response = await img_model.generate_content_async([prompt, a_img], stream=True)
     full_plain_message = ""
-    await _.bot.delete_message(chat_id=update.message.chat_id, message_id=sticker_message.message_id)
+    
     async for chunk in response:
         try:
             if chunk.text:
@@ -691,6 +733,7 @@ async def handle_image(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
                     text=message,
                     parse_mode=ParseMode.HTML,
                     disable_web_page_preview=True,
+                    reply_markup=reply_markup
                 )
         except StopCandidateException:
             await init_msg.edit_text("The model unexpectedly stopped generating.")
@@ -717,6 +760,7 @@ async def handle_image(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
                     parse_mode=ParseMode.HTML,
                     reply_to_message_id=init_msg.message_id,
                     disable_web_page_preview=True,
+                    reply_markup=reply_markup
                 )
         await asyncio.sleep(0.1)
 
@@ -813,7 +857,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         elif "time" in audio_text.lower() and "now" in audio_text.lower():
             current_datetime = datetime.datetime.now()
             formatted_time = current_datetime.strftime("%H:%M pm, %S second")
-            prompt = f"time is - {formatted_time}, tell the time in 'BHAI : Now the time is _:_ pm and _ second'"
+            prompt = f"time is - {formatted_time}, tell the time in 'BHAI🔓: Now the time is _:_ pm and _ second'"
         else:        
             prompt=audio_text
         await chat.send_message_async(
@@ -841,11 +885,12 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             if chunk.text:
                 full_plain_message += chunk.text
                 message = format_message(full_plain_message)
-                # init_msg = await init_msg.edit_text(
-                    # text=message,
-                    # parse_mode=ParseMode.HTML,
-                    # disable_web_page_preview=True,
-                # )
+                init_msg = await init_msg.edit_text(
+                    text=message,
+                    parse_mode=ParseMode.HTML,
+                    disable_web_page_preview=True,
+                    reply_markup=reply_markup
+                )
                 
         except StopCandidateException as sce:
             await init_msg.edit_text("The model unexpectedly stopped generating.")
@@ -901,38 +946,62 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         # Send the voice message and update text in caption
         await context.bot.delete_message(chat_id=update.message.chat_id, message_id=sticker_message.message_id)
         await context.bot.delete_message(chat_id=update.message.chat_id, message_id=init_msg.message_id)
-        voice_msg = await update.message.reply_voice(voice=voice_stream, caption="Answer in below 👇", parse_mode=ParseMode.HTML)
+        voice_msg = await update.message.reply_voice(voice=voice_stream, caption="Answer in below 👇", parse_mode=ParseMode.HTML, reply_markup=reply_markup)
         await update.message.reply_text(message, reply_to_message_id=voice_msg.message_id,parse_mode=ParseMode.HTML)
         voice_sent = True  # Set the flag to indicate the voice has been sent
     
     await asyncio.sleep(0.1)
 
+OWNER_ID = 1722478636
+from telegram.ext import ConversationHandler
 
-async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle inline queries."""
-    query = update.inline_query.query
-    if not query:
-        return
 
-    # Check if the query mentions your bot
-    if "TGPIROBOT" in query:
-        response_text = "Hello! I'm here to help answer questions about TGPIROBOT."
+async def broadcast_start(update, context):
+    await update.message.reply_text("Send your broadcast message. You can send text, photo, voice, etc.")
+    return BROADCAST_MESSAGE
+
+async def get_message_type(update, context):
+    context.user_data['message'] = update.message
+    keyboard = [['Text', 'Photo', 'Voice']]  # You can add more options
+    reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+    await update.message.reply_text("Choose the type of message:", reply_markup=reply_markup)
+    return MESSAGE_TYPE
+
+async def broadcast_message(update, context):
+    user_id = update.effective_user.id
+
+    if user_id == OWNER_ID:
+        message_type = update.message.text
+        broadcast_text = context.user_data.get('message').text if message_type == 'Text' else ''
+        broadcast_photo = context.user_data.get('message').photo[-1].file_id if message_type == 'Photo' else ''
+        broadcast_voice = context.user_data.get('message').voice.file_id if message_type == 'Voice' else ''
+
+        async with aiosqlite.connect(DATABASE_FILE) as db:
+            cursor = await db.execute('SELECT user_id FROM users')
+            user_ids = [row[0] for row in await cursor.fetchall()]
+
+        for user_id in user_ids:
+            try:
+                if message_type == 'Text':
+                    await context.bot.send_message(user_id, f"Broadcast message from the owner:\n\n{broadcast_text}")
+                elif message_type == 'Photo':
+                    await context.bot.send_photo(user_id, photo=broadcast_photo, caption=f"Broadcast photo from the owner:")
+                elif message_type == 'Voice':
+                    await context.bot.send_voice(user_id, voice=broadcast_voice, caption=f"Broadcast voice message from the owner:")
+            except Exception as send_error:
+                print(f"Error sending message to user {user_id}: {send_error}")
+
+        await update.message.reply_text(f"Broadcast message sent to {len(user_ids)} users.")
     else:
-        # Process the query and generate a response using your model
-        chat = context.chat_data.get("chat", model.start_chat(history=history))
-        response = await chat.send_message_async(query, stream=True)
-        response_text = format_message(response.text)
+        await update.message.reply_text("You are not authorized to use this command.")
 
-    # Create an InlineQueryResultArticle with the response text
-    results = [
-        InlineQueryResultArticle(
-            id=str(uuid4()),
-            title="Generated Response",
-            input_message_content=InputTextMessageContent(
-                message_text=response_text,
-                parse_mode=ParseMode.HTML,
-            ),
-        )
-    ]
+    return ConversationHandler.END
 
-    await update.inline_query.answer(results, cache_time=0)
+async def broadcast_cancel(update, context):
+    await update.message.reply_text("Broadcast cancelled.")
+    return ConversationHandler.END
+
+# Add this handler to your application
+
+
+
